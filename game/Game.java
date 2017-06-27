@@ -1,7 +1,9 @@
 package game;
 
 import java.util.Random;
+import java.util.Vector;
 
+import Items.Item;
 import gui.GameWindow;
 
 public class Game {
@@ -127,9 +129,16 @@ public class Game {
 		Inventory roomInv = player.GetRoom().GetInventory();
 		Inventory playerInv = player.GetInventory();
 		if(roomInv.Contains(itemName)){
-			playerInv.AddItem(roomInv.GetItem(itemName));
-			roomInv.RemoveItem(itemName);
-			player.GetRoom().SetCell(x, y, "Empty", "empty");
+			Item itemToPickup;
+			for(int i = 0; i < roomInv.GetSize(); i++){
+				itemToPickup = roomInv.GetItemByIndex(i);
+				if(Vector2.CompareVectors(itemToPickup.GetItemInRoomLocation(), new Vector2(x, y))){
+					playerInv.AddItem(itemToPickup);
+					roomInv.RemoveItem(itemToPickup);
+					player.GetRoom().SetCell(x, y, "Empty", "empty");
+					return;
+				}
+			}
 		}
 	}
 	
@@ -146,11 +155,13 @@ public class Game {
 			return;
 		}
 		if(player.GetInventory().Contains(item)){
-			window.DisplayText("You dropped a " + item);
+			Item itemToDrop = player.GetInventory().GetItemByName(item);;
 			Vector2 itemRandomLocation = GetRandomCellAroundPlayer();
-			player.GetRoom().GetInventory().AddItem(player.GetInventory().GetItem(item));
-			player.GetInventory().RemoveItem(item);
+			window.DisplayText("You dropped a " + item);
+			player.GetRoom().GetInventory().AddItem(itemToDrop);
+			player.GetInventory().RemoveItem(itemToDrop);
 			player.GetRoom().SetCell((int)itemRandomLocation.x, (int)itemRandomLocation.y, "Item", item);
+			itemToDrop.SetItemInRoomLocation((int)itemRandomLocation.x, (int)itemRandomLocation.y);
 		}else{
 			window.DisplayText("This item is not in your inventory!");
 		}
@@ -164,7 +175,6 @@ public class Game {
 		do{
 			x = random.nextInt(3) - 1;
 			y = random.nextInt(3) - 1;
-			System.out.println(x + "   " + y);
 		}while(x == 0 && y == 0);
 		randomCell.add(new Vector2(x, y));
 		return randomCell;

@@ -51,10 +51,10 @@ public class Inventory {
 		inventory.add(item);
 	}
 	
-	public void RemoveItem(String item){
+	public void RemoveItem(Item item){
 		Iterator<Item> iterator = inventory.iterator();
 		while(iterator.hasNext()) {
-			if(iterator.next().GetItemName().equalsIgnoreCase(item)){
+			if(iterator.next() == item){
 				iterator.remove();
 				return;
 			}
@@ -71,7 +71,7 @@ public class Inventory {
 		return false;
 	}
 	
-	public Item GetItem(String item){
+	public Item GetItemByName(String item){
 		Iterator<Item> iterator = inventory.iterator();
 		while(iterator.hasNext()) {
 			Item invItem = iterator.next();
@@ -80,6 +80,17 @@ public class Inventory {
 			}
 	    }
 		return null;
+	}
+	
+	public Item GetItemByIndex(int index){
+		if(!(index > inventory.size())){
+			return inventory.get(index);
+		}
+		return null;
+	}
+	
+	public int GetSize(){
+		return inventory.size();
 	}
 
 }

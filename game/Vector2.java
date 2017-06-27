@@ -182,5 +182,15 @@ public class Vector2 {
 	public static Vector2 divS(Vector2 v1, double scalar){
 		return new Vector2(v1.x / scalar, v1.y / scalar);
 	}
+	
+	public static boolean CompareVectors(Vector2 vec1, Vector2 vec2){
+		int x1 = (int)vec1.x;
+		int y1 = (int)vec1.y;
+		int x2 = (int)vec2.x;
+		int y2 = (int)vec2.y;
+		
+		if (x1 != x2 || y1 != y2)return false;
+		return true;
+	}
 
 }

@@ -73,12 +73,6 @@ public class Room extends JPanel {
 			SetCell(xPos, yPos, "Item", randomItem.GetItemName());
 			roomInventory.AddItem(randomItem);
 		}
-		
-		/*System.out.println(roomInventory.Contains("Health potion"));
-		if(roomInventory.Contains("health potion")){
-			//roomInventory.RemoveItem();
-			System.out.println("Working!");
-		}*/
 	}
 	
 	public void SetCell(int x, int y, String currentObject, String objectName){
