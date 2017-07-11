@@ -7,9 +7,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import Items.HealthPotion;
-import Items.Item;
-import Items.SwordWooden;
+import items.HealthPotion;
+import items.Item;
+import items.SwordWooden;
 
 public class ItemSpawner {
 	
@@ -18,8 +18,8 @@ public class ItemSpawner {
 	public ItemSpawner() {
 		itemList = new HashMap<Double, String>();
 		
-		itemList.put(0.5, "Items.HealthPotion");
-		itemList.put(1.0, "Items.SwordWooden");
+		itemList.put(0.5, "items.HealthPotion");
+		itemList.put(1.0, "items.SwordWooden");
 	}
 	
 	public Item GetRandomItem(){

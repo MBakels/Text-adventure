@@ -4,37 +4,48 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import Items.Item;
+import items.Item;
 
 public class Inventory {
 	
 	private List<Item> inventory;
-	private String invContendText;
+	private String standardPlayerText;
+	private String invHasContendText;
 	private String invEmptyText;
 	private String invType;
+	private int maxItemCapacity;
+	private double maxWeight;
+	private double currentWeight;
+	
+	
 
-	public Inventory(int size, String type) {
-		inventory = new ArrayList<Item>();
+	public Inventory(int size, double weight, String type) {
+		maxItemCapacity = size;
 		invType = type;
-		if(type == "player"){
-			invContendText = "You have these items in your backpack:";
+		maxWeight = weight;
+		inventory = new ArrayList<Item>(20);
+		if(invType == "player"){
+			invHasContendText = "You have these items in your backpack:";
 			invEmptyText = "Your backpack is empty.";
-		}else if(type == "enemy"){
-			invContendText = "The enemy had these items on his body:";
+		}else if(invType == "enemy"){
+			invHasContendText = "The enemy had these items on his body:";
 			invEmptyText = "The enemy had no useful items on him.";
 		}
-		else if(type == "room"){
-			invContendText = "You can see these items laying around in the area:";
+		else if(invType == "room"){
+			invHasContendText = "You can see these items laying around in the area:";
 			invEmptyText = "This room seems to be empty.";
 		}
 	}
 	
 	public String ShowContends(){
-		String invContends;
+		String invContends = "";
+		if(invType == "player"){
+			invContends = "You are carying your dads old leather backpack." + "\n" + "You are carying (" + inventory.size() + " / " + maxItemCapacity + ") items and your backpack weighs (" + currentWeight + " / " + maxWeight + ") KG.\n";
+		}
 		if(inventory.size() == 0){
-			invContends = invEmptyText;
+			invContends += invEmptyText;
 		}else{
-			invContends = invContendText;
+			invContends += invHasContendText;
 		}
 	    Iterator<Item> iterator = inventory.iterator();
 		while(iterator.hasNext()) {
@@ -47,8 +58,13 @@ public class Inventory {
 		return invContends;
 	}
 	
-	public void AddItem(Item item){
-		inventory.add(item);
+	public boolean AddItem(Item item){
+		if(inventory.size() < maxItemCapacity && (currentWeight + item.GetItemWheight() < maxWeight)){
+			inventory.add(item);
+			currentWeight += item.GetItemWheight();
+			return true;
+		}
+		return false;
 	}
 	
 	public void RemoveItem(Item item){
@@ -56,6 +72,7 @@ public class Inventory {
 		while(iterator.hasNext()) {
 			if(iterator.next() == item){
 				iterator.remove();
+				currentWeight -= item.GetItemWheight();
 				return;
 			}
 	    }
@@ -83,7 +100,7 @@ public class Inventory {
 	}
 	
 	public Item GetItemByIndex(int index){
-		if(!(index > inventory.size())){
+		if(!(index > inventory.size() - 1)){
 			return inventory.get(index);
 		}
 		return null;

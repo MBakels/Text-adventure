@@ -2,15 +2,17 @@ package game;
 
 public class Player {
 	
+	private int maxHealth;
 	private int health;
 	private Vector2 location;
 	private Room currentRoom;
 	private Inventory inventory;
 
 	public Player() {
-		health = 100;
+		maxHealth = 100;
+		health = maxHealth;
 		location = new Vector2(10, 10);
-		inventory = new Inventory(20, "player");
+		inventory = new Inventory(20, 20.00, "player");
 	}
 	
 	public boolean IsAlive(){
@@ -18,6 +20,14 @@ public class Player {
 			return true;
 		}
 		return false;
+	}
+	
+	public int GetMaxHealth(){
+		return maxHealth;
+	}
+	
+	public int GetHealth(){
+		return health;
 	}
 	
 	public void Damage(int amount){

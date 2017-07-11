@@ -3,14 +3,15 @@ package game;
 import java.util.Random;
 import java.util.Vector;
 
-import Items.Item;
 import gui.GameWindow;
+import items.Item;
 
 public class Game {
 	
 	private GameWindow window;
 	private Parser parser;
 	private Player player;
+	private int ticksUsedThisTurn;
 
 	public static void main(String[] args) {
 		Game game = new Game();
@@ -22,6 +23,7 @@ public class Game {
 		window.setVisible(true);
         parser = new Parser();
         player = new Player();
+        ticksUsedThisTurn = 0;
     }
 	
 	private void Play() {
@@ -67,8 +69,56 @@ public class Game {
 		case "drop":
 			DropItem(command);
 			break;
+		case "use":
+			UseItem(command);
+			break;
+		case "status":
+			Status();
+			break;
+		case "attack":
+			Attack();
+			break;
 		}
+        Update();
     }
+	
+	private void Update(){
+		if(ticksUsedThisTurn != 0){
+			player.GetRoom().UpdateRoom(ticksUsedThisTurn);
+			ticksUsedThisTurn = 0;
+		}
+	}
+	
+	private void Attack(){
+		
+	}
+	
+	private void Status(){
+		window.DisplayText("You take some time to look at your body and come the these conclosions:\n");
+		window.DisplayText("Health: " + player.GetHealth());
+	}
+	
+	private void UseItem(Command command){
+		String item = "";
+		if(command.hasSecondWord()) {
+			item = command.getSecondWord();
+        }
+		if(command.hasThirdWord()){
+			item += " " + command.getThirdWord();
+		}
+		if(item == ""){
+			window.DisplayText("What item do you want to use?");
+			return;
+		}
+		if(player.GetInventory().Contains(item)){
+			Item itemToUse = player.GetInventory().GetItemByName(item);
+			String itemUseText = itemToUse.Use(player);
+			window.DisplayText(itemUseText);
+			ticksUsedThisTurn += 1;
+		}else{
+			window.DisplayText("You cant use what you dont have!");
+		}
+	}
 	
 	private void CheckItemToPickUpLocation(Command command){
 		Vector2 location = player.GetLocation();
@@ -133,9 +183,15 @@ public class Game {
 			for(int i = 0; i < roomInv.GetSize(); i++){
 				itemToPickup = roomInv.GetItemByIndex(i);
 				if(Vector2.CompareVectors(itemToPickup.GetItemInRoomLocation(), new Vector2(x, y))){
-					playerInv.AddItem(itemToPickup);
-					roomInv.RemoveItem(itemToPickup);
-					player.GetRoom().SetCell(x, y, "Empty", "empty");
+					boolean itemHasBeenPickedUp = playerInv.AddItem(itemToPickup);
+					if(itemHasBeenPickedUp){
+						roomInv.RemoveItem(itemToPickup);
+						player.GetRoom().SetCell(x, y, "Empty", "empty");
+						window.DisplayText("You picked up a " + itemName);
+						ticksUsedThisTurn += 1;
+						return;
+					}
+					window.DisplayText("Your backpack is full or weighs to much.");
 					return;
 				}
 			}
@@ -155,13 +211,14 @@ public class Game {
 			return;
 		}
 		if(player.GetInventory().Contains(item)){
-			Item itemToDrop = player.GetInventory().GetItemByName(item);;
+			Item itemToDrop = player.GetInventory().GetItemByName(item);
 			Vector2 itemRandomLocation = GetRandomCellAroundPlayer();
 			window.DisplayText("You dropped a " + item);
 			player.GetRoom().GetInventory().AddItem(itemToDrop);
 			player.GetInventory().RemoveItem(itemToDrop);
 			player.GetRoom().SetCell((int)itemRandomLocation.x, (int)itemRandomLocation.y, "Item", item);
 			itemToDrop.SetItemInRoomLocation((int)itemRandomLocation.x, (int)itemRandomLocation.y);
+			ticksUsedThisTurn += 1;
 		}else{
 			window.DisplayText("This item is not in your inventory!");
 		}
@@ -187,6 +244,7 @@ public class Game {
 			window.DisplayText("You look around the room.\n");
 			window.DisplayText(player.GetRoom().GetInventory().ShowContends());
 		}
+		ticksUsedThisTurn += 1;
 	}
 	
 	private void PrintHelp() {
@@ -200,6 +258,8 @@ public class Game {
     }
 	
 	private void Move(Command command) {
+		boolean movedSuccessfully = false;
+		
         if(!command.hasSecondWord()) {
             window.DisplayText("Move where?");
             return;
@@ -228,64 +288,111 @@ public class Game {
         
         switch(direction){
         case "up":
-        	MovePlayer(new Vector2(0, -steps));
+        	movedSuccessfully = MovePlayer(new Vector2(0, -steps), steps);
         	break;
         case "down":
-        	MovePlayer(new Vector2(0, steps));
+        	movedSuccessfully = MovePlayer(new Vector2(0, steps), steps);
         	break;
         case "left":
-        	MovePlayer(new Vector2(-steps, 0));
+        	movedSuccessfully = MovePlayer(new Vector2(-steps, 0), steps);
         	break;
         case "right":
-        	MovePlayer(new Vector2(steps, 0));
+        	movedSuccessfully = MovePlayer(new Vector2(steps, 0), steps);
         	break;
         default:
         	window.DisplayText("Please choose from up, down, left and right.");
         	return;
         }
         
-        window.DisplayText("Moving " + direction + " " + steps + " step(s).");
+        if(movedSuccessfully){
+        	window.DisplayText("Moving " + direction + " " + steps + " step(s).");
+        }
     }
 	
-	private void MovePlayer(Vector2 direction){
-		window.SetCell((int)player.GetRoom().GetLocation().x, (int)player.GetRoom().GetLocation().y, (int)player.GetLocation().x, (int)player.GetLocation().y, "Empty", "empty");
-		
-		Vector2 movingTo = player.GetLocation().add(direction);
+	
+	
+	private boolean MovePlayer(Vector2 direction, int steps){
+		Vector2 movingTo = player.GetLocation().copy().add(direction);
 		Vector2 roomLocation = player.GetRoom().GetLocation().copy();
+		
+		if(movingTo.x > 0 && movingTo.x < (player.GetRoom().GetSize() - 1) && movingTo.y > 0 && movingTo.y < (player.GetRoom().GetSize() - 1)){
+			if(!CheckIfCellIsNotObstructed(player.GetRoom(), movingTo)){
+				return false;
+			}
+		}
 		
 		if(movingTo.x < 0){
 			roomLocation.x --;
 			int x = (int)movingTo.x + player.GetRoom().GetSize();
-			MovePlayerToNextRoom(roomLocation, new Vector2(x, player.GetLocation().y));
-			return;
+			Room nextRoom = CreateNextRoomIfNoneExistent(roomLocation);
+			if(CheckIfCellIsNotObstructed(nextRoom, new Vector2(x, player.GetLocation().y))){
+				window.SetCell((int)player.GetRoom().GetLocation().x, (int)player.GetRoom().GetLocation().y, (int)player.GetLocation().x, (int)player.GetLocation().y, "Empty", "empty");
+				MovePlayerToNextRoom(roomLocation, new Vector2(x, player.GetLocation().y));
+				ticksUsedThisTurn += x + 1;
+				return true;
+			}
+			return false;
 		}else if(movingTo.x > (player.GetRoom().GetSize() - 1)){
 			roomLocation.x ++;
 			int x = (int)movingTo.x - player.GetRoom().GetSize();
-			MovePlayerToNextRoom(roomLocation, new Vector2(x, player.GetLocation().y));
-			return;
-		}
-		else if(movingTo.y < 0){
+			Room nextRoom = CreateNextRoomIfNoneExistent(roomLocation);
+			if(CheckIfCellIsNotObstructed(nextRoom, new Vector2(x, player.GetLocation().y))){
+				window.SetCell((int)player.GetRoom().GetLocation().x, (int)player.GetRoom().GetLocation().y, (int)player.GetLocation().x, (int)player.GetLocation().y, "Empty", "empty");
+				MovePlayerToNextRoom(roomLocation, new Vector2(x, player.GetLocation().y));
+				ticksUsedThisTurn += x + 1;
+				return true;
+			}
+			return false;
+		}else if(movingTo.y < 0){
 			roomLocation.y --;
 			int y = (int)movingTo.y + player.GetRoom().GetSize();
-			MovePlayerToNextRoom(roomLocation, new Vector2(player.GetLocation().x, y));
-			return;
-		}
-		else if(movingTo.y > (player.GetRoom().GetSize() - 1)){
+			Room nextRoom = CreateNextRoomIfNoneExistent(roomLocation);
+			if(CheckIfCellIsNotObstructed(nextRoom, new Vector2(player.GetLocation().x, y))){
+				window.SetCell((int)player.GetRoom().GetLocation().x, (int)player.GetRoom().GetLocation().y, (int)player.GetLocation().x, (int)player.GetLocation().y, "Empty", "empty");
+				MovePlayerToNextRoom(roomLocation, new Vector2(player.GetLocation().x, y));
+				ticksUsedThisTurn += y + 1;
+				return true;
+			}
+			return false;
+		}else if(movingTo.y > (player.GetRoom().GetSize() - 1)){
 			roomLocation.y ++;
 			int y = (int)movingTo.y - player.GetRoom().GetSize();
-			MovePlayerToNextRoom(roomLocation, new Vector2(player.GetLocation().x, y));
-			return;
+			Room nextRoom = CreateNextRoomIfNoneExistent(roomLocation);
+			if(CheckIfCellIsNotObstructed(nextRoom, new Vector2(player.GetLocation().x, y))){
+				window.SetCell((int)player.GetRoom().GetLocation().x, (int)player.GetRoom().GetLocation().y, (int)player.GetLocation().x, (int)player.GetLocation().y, "Empty", "empty");
+				MovePlayerToNextRoom(roomLocation, new Vector2(player.GetLocation().x, y));
+				ticksUsedThisTurn += y + 1;
+				return true;
+			}
+			return false;
+		}else{
+			window.SetCell((int)player.GetRoom().GetLocation().x, (int)player.GetRoom().GetLocation().y, (int)player.GetLocation().x, (int)player.GetLocation().y, "Empty", "empty");
+			player.SetLocation(movingTo);
+			window.SetCell((int)player.GetRoom().GetLocation().x, (int)player.GetRoom().GetLocation().y, (int)player.GetLocation().x, (int)player.GetLocation().y, "Player", "player");
+			ticksUsedThisTurn += steps;
+			return true;
 		}
-		
-		player.SetLocation(movingTo);
-		window.SetCell((int)player.GetRoom().GetLocation().x, (int)player.GetRoom().GetLocation().y, (int)player.GetLocation().x, (int)player.GetLocation().y, "Player", "player");
 	}
 	
-	private void MovePlayerToNextRoom(Vector2 nextRoomLocation, Vector2 newPlayerLocation){
+	private boolean CheckIfCellIsNotObstructed(Room room, Vector2 destination){
+		Vector2 movingTo = destination.copy();
+		if(room.GetCellContendsObjectName((int)movingTo.x, (int)movingTo.y) != "empty"){
+			window.DisplayText("Something is blocking your path!");
+			return false;
+		}
+		return true;
+	}
+	
+	private Room CreateNextRoomIfNoneExistent(Vector2 nextRoomLocation){
 		Room[][] rooms = window.GetRoomsList();
 		if(rooms[(int)nextRoomLocation.x][(int)nextRoomLocation.y] == null){
 			window.CreateNewRoom((int)nextRoomLocation.x, (int)nextRoomLocation.y);
 		}
+		return rooms[(int)nextRoomLocation.x][(int)nextRoomLocation.y];
+	}
+	
+	private void MovePlayerToNextRoom(Vector2 nextRoomLocation, Vector2 newPlayerLocation){
+		Room[][] rooms = window.GetRoomsList();
 		window.SetMapToRoom(player.GetRoom(), rooms[(int)nextRoomLocation.x][(int)nextRoomLocation.y]);
 		player.SetRoom(rooms[(int)nextRoomLocation.x][(int)nextRoomLocation.y]);
 		player.SetLocation(newPlayerLocation);
@@ -294,6 +401,7 @@ public class Game {
 	
 	private void Inventory(){
 		window.DisplayText(player.GetInventory().ShowContends());
+		ticksUsedThisTurn += 1;
 	}
 	
 	private void Quit(Command command) {

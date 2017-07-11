@@ -30,7 +30,12 @@ public class Cell extends JLabel {
 			case "Enemy":
 				setBackground(Color.RED);
 				this.setText("E");
-				CellContendsObjectName = objectName;
+				CellContendsObjectName = "enemy";
+				break;
+			case "DeadEnemy":
+				setBackground(Color.ORANGE);
+				this.setText("DE");
+				CellContendsObjectName = "dead enemy";
 				break;
 			case "Item":
 				setBackground(Color.YELLOW);
@@ -40,7 +45,7 @@ public class Cell extends JLabel {
 			case "Empty":
 				setBackground(Color.lightGray);
 				this.setText("X");
-				CellContendsObjectName = objectName;
+				CellContendsObjectName = "empty";
 				break;
 		}
 		

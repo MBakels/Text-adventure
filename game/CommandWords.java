@@ -2,7 +2,7 @@ package game;
 
 class CommandWords {
     private static final String validCommands[] = {
-        "move", "quit", "help", "look", "inventory", "pickup", "drop"
+        "move", "quit", "help", "look", "inventory", "pickup", "drop", "use", "status", "attack"
     };
 
     /**
